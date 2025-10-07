@@ -10,24 +10,20 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import static org.zeroBzeroT.chatCo.Utils.componentFromLegacyText;
 import static org.zeroBzeroT.chatCo.Utils.containsUnicode;
 import static org.zeroBzeroT.chatCo.Utils.getDirectColorCode;
 import static org.zeroBzeroT.chatCo.Utils.parseFormattingTags;
 import static org.zeroBzeroT.chatCo.Utils.stripColor;
 
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
+import io.papermc.paper.event.player.AsyncChatEvent;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.event.HoverEvent;
 
 import java.util.Iterator;
 
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 public class PublicChat implements Listener {
     public static Main plugin = null;
@@ -69,9 +65,10 @@ public class PublicChat implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void preProcessChat(AsyncPlayerChatEvent event) {
+    public void preProcessChat(AsyncChatEvent event) {
         Player player = event.getPlayer();
-        String message = event.getMessage();
+        // Convert Component to plain text for checking
+        String message = PlainTextComponentSerializer.plainText().serialize(event.message());
 
         // Check for unicode characters if the feature is enabled
         if (PublicChat.plugin.getConfig().getBoolean("ChatCo.blockUnicodeText", false) && containsUnicode(message)) {
@@ -107,11 +104,13 @@ public class PublicChat implements Listener {
             return;
         }
 
-        event.setMessage(legacyMessage);
+        // Convert processed message back to Component
+        Component processedComponent = LegacyComponentSerializer.legacySection().deserialize(legacyMessage);
+        event.message(processedComponent);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-    public void filterChatRecipients(AsyncPlayerChatEvent event) {
+    public void filterChatRecipients(AsyncChatEvent event) {
         Player player = event.getPlayer();
         boolean chatDisabledGlobal = PublicChat.plugin.getConfig().getBoolean("ChatCo.chatDisabled", false);
         if (chatDisabledGlobal) {
@@ -121,9 +120,13 @@ public class PublicChat implements Listener {
 
         boolean isBlackholed = BlackholeModule.isPlayerBlacklisted(player);
 
-        Iterator<Player> iterator = event.getRecipients().iterator();
+        Iterator<net.kyori.adventure.audience.Audience> iterator = event.viewers().iterator();
         while (iterator.hasNext()) {
-            Player recipient = iterator.next();
+            net.kyori.adventure.audience.Audience audience = iterator.next();
+            if (!(audience instanceof Player)) {
+                continue;
+            }
+            Player recipient = (Player) audience;
             if (recipient.equals(player)) {
                 continue; // Sender always sees their own message
             }
@@ -143,31 +146,30 @@ public class PublicChat implements Listener {
 
         if (isBlackholed) {
             // Only sender sees it; remove all other recipients
-            iterator = event.getRecipients().iterator();
+            iterator = event.viewers().iterator();
             while (iterator.hasNext()) {
-                Player recipient = iterator.next();
-                if (!recipient.equals(player)) {
+                net.kyori.adventure.audience.Audience audience = iterator.next();
+                if (audience instanceof Player && !audience.equals(player)) {
                     iterator.remove();
                 }
             }
             // Log blocked message if not hidden
             if (!BlackholeModule.isPlayerHidden(player)) {
-                String legacyMessage = event.getMessage();
-                plugin.getLogger().log(Level.INFO, "Blocked message from {0}: {1}", new Object[]{player.getName(), stripColor(legacyMessage)});
+                String plainMessage = PlainTextComponentSerializer.plainText().serialize(event.message());
+                plugin.getLogger().log(Level.INFO, "Blocked message from {0}: {1}", new Object[]{player.getName(), plainMessage});
             }
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
-    public void logChatToConsole(AsyncPlayerChatEvent event) {
-        if (event.isCancelled()) {
-            return;
-        }
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void logChatToConsole(AsyncChatEvent event) {
         if (!PublicChat.plugin.getConfig().getBoolean("ChatCo.chatToConsole", true)) {
             return;
         }
         Player player = event.getPlayer();
-        String fullMessage = "<" + stripColor(player.getDisplayName()) + "> " + stripColor(event.getMessage());
+        String displayName = PlainTextComponentSerializer.plainText().serialize(player.displayName());
+        String message = PlainTextComponentSerializer.plainText().serialize(event.message());
+        String fullMessage = "<" + displayName + "> " + message;
         plugin.getLogger().log(Level.INFO, "[CHAT] {0}", fullMessage);
     }
 

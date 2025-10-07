@@ -139,10 +139,6 @@ public class Whispers implements Listener {
             whisperLog(logText, sender.getName());
         }
         if (plugin.getConfig().getBoolean("ChatCo.whisperMonitoring", false) && !BlackholeModule.isPlayerHidden(sender)) {
-            plugin.getLogger().log(Level.INFO, "{0}: {1}", new Object[]{sender.getName(), logText});
-        }
-        // Log to console if enabled and not already logged via whisperMonitoring
-        else if (plugin.getConfig().getBoolean("ChatCo.chatToConsole", true) && !BlackholeModule.isPlayerHidden(sender)) {
             plugin.getLogger().log(Level.INFO, "[WHISPER] {0} -> {1}: {2}", 
                 new Object[]{sender.getName(), receiver.getName(), stripColor(logText)});
         }

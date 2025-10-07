@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -222,7 +220,7 @@ public class Main extends JavaPlugin {
                             return;
                         }
 
-                        player.setLastDamageCause(new EntityDamageEvent(player, getRandomDamageCause(), 100.0));
+                        // Simply set health to 0 - setLastDamageCause is deprecated and for internal use only
                         player.setHealth(0.0);
                     }
                 }.runTask(this);
@@ -235,7 +233,7 @@ public class Main extends JavaPlugin {
                 }
 
 
-                Location location = player.getBedSpawnLocation();
+                Location location = player.getRespawnLocation();
                 if (location != null) {
                     final double x = location.getX();
                     final double y = location.getY();
@@ -479,12 +477,6 @@ public class Main extends JavaPlugin {
 
         String message = "&eIgnore list deleted.";
         p.sendMessage(componentFromLegacyText(message));
-    }
-
-    private EntityDamageEvent.DamageCause getRandomDamageCause() {
-        EntityDamageEvent.DamageCause[] causes = EntityDamageEvent.DamageCause.values();
-        Random random = new Random();
-        return causes[random.nextInt(causes.length)];
     }
 
     public void remove(Player player) {

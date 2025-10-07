@@ -115,8 +115,7 @@
     </repositories>
 
     <dependencies>
-        <!--This adds the Spigot API artifact to the build -->
-        <!-- folia api -->
+        <!-- Folia API (includes Paper API) -->
         <dependency>
             <groupId>dev.folia</groupId>
             <artifactId>folia-api</artifactId>
@@ -127,7 +126,6 @@
             <groupId>org.bstats</groupId>
             <artifactId>bstats-bukkit</artifactId>
             <version>3.1.0</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.ibm.icu</groupId>

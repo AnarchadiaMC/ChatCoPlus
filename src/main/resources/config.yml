@@ -53,7 +53,7 @@ ChatCo:
     AQUA: null
     BLACK: null
     BLUE: "`"
-    BOLD: null
+    BOLD: "**"
     DARK_AQUA: null
     DARK_BLUE: null
     DARK_GRAY: null
