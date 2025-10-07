@@ -77,7 +77,6 @@ ChatCo:
     delay: 350
     messages:
     - '<GREEN>Join our Discord <RED>@ <UNDERLINE><AQUA>https://discord.anarchadia.org'
-    - '<GREEN>Visit our website: <UNDERLINE><AQUA>https://anarchadia.org<RESET> <GREEN>forupdates!'
     - '<GREEN>Wonder what your joindate is? Try <AQUA>/joindate <GREEN>to see yours!'
     - '<GREEN>Need someone to talk with? Message our very own <AQUA>Olygarchist <GREEN>to chat with AI!'
     - '<GREEN>Looking to trade? Use <AQUA>/ah <GREEN>to list items on the global <YELLOW>AuctionHouse!'
@@ -85,13 +84,38 @@ ChatCo:
     - '<GREEN>Mini pets are here! Find <LIGHT_PURPLE>Holy Hand Grenades <GREEN>to get your very own!'
     - '<GREEN>Portals spawn at any two-coordinate pairs: <YELLOW>2500, 5000, 10000, 20000, 30000, 50000, 100000, 200000<GREEN> and more!'
 
+# Anti-Spam Configuration - Pure Scoring System
+# Everything adds points. Higher score = more likely spam. Lower score = more trusted.
+# New players with no activity get high base scores automatically.
+AntiSpam:
+  enabled: true
+  # Require movement tracking (doesn't block, just adds points)
+  requireMovement: true
+  # Minimum blocks a player must move (or else gets penalty)
+  minMovementDistance: 2
+  # Similarity threshold for detecting repeated messages from same player (0.0-1.0)
+  # 0.80 = 80% similar messages will be flagged
+  selfSimilarityThreshold: 0.80
+  # Similarity threshold for detecting multi-bot spam (messages similar to ANY recent message)
+  # 0.85 = 85% similar to any recent message will be flagged
+  globalSimilarityThreshold: 0.85
+  
+  # Penalty Scoring - Points added for suspicious behavior
+  Penalties:
+    # Player hasn't moved or moved very little
+    noMovement: 30
+    # Player has very low playtime (<10 min = full, 10-30 = 60%, 30-60 = 30%, 60+ = 0)
+    lowPlaytime: 25
+    # Player has no XP levels (0 levels = full, <5 = 50%, 5+ = 0)
+    noLevels: 20
+    # Player has no server activity like blocks broken (<10 = full, 10-50 = 60%, 50-100 = 30%, 100+ = 0)
+    noActivity: 15
 
 # Available formatting tags:
 # <BOLD>        - Makes text bold
 # <ITALIC>      - Makes text italic
 # <UNDERLINE>   - Underlines text
-# <STRIKETHROUGH> - Strikes through text
-# <MAGIC>       - Creates obfuscated text
+# <STRIKETHROUGH> - strikes through text
 # <RESET>       - Resets all formatting
 
 # Available colors:

@@ -28,9 +28,11 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 public class PublicChat implements Listener {
     public static Main plugin = null;
     private final FileConfiguration permissionConfig;
+    private final AntiSpam antiSpam;
 
-    public PublicChat(final Main plugin) {
+    public PublicChat(final Main plugin, final AntiSpam antiSpam) {
         PublicChat.plugin = plugin;
+        this.antiSpam = antiSpam;
         File customConfig = Main.PermissionConfig;
         permissionConfig = YamlConfiguration.loadConfiguration(customConfig);
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -88,6 +90,16 @@ public class PublicChat implements Listener {
             }
             event.setCancelled(true);
             return;
+        }
+
+        // Check for spam
+        if (PublicChat.plugin.getConfig().getBoolean("AntiSpam.enabled", true)) {
+            AntiSpam.SpamCheckResult spamCheck = antiSpam.checkMessage(player, message);
+            if (spamCheck.isSpam()) {
+                player.sendMessage("§c[AntiSpam] " + spamCheck.getReason());
+                event.setCancelled(true);
+                return;
+            }
         }
 
         // Apply prefix colors
