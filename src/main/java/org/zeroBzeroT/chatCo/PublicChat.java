@@ -23,11 +23,9 @@ import java.util.Iterator;
 public class PublicChat implements Listener {
     public static Main plugin = null;
     private final FileConfiguration permissionConfig;
-    private final AntiSpam antiSpam;
 
-    public PublicChat(final Main plugin, final AntiSpam antiSpam) {
+    public PublicChat(final Main plugin) {
         PublicChat.plugin = plugin;
-        this.antiSpam = antiSpam;
         File customConfig = Main.PermissionConfig;
         permissionConfig = YamlConfiguration.loadConfiguration(customConfig);
         // Event registration handled by Main.java - don't register here to avoid duplicates
@@ -86,19 +84,6 @@ public class PublicChat implements Listener {
             event.setMessage("[BLOCKED] ***WAS NOT SENT*** " + message);
             event.setCancelled(true);
             return;
-        }
-
-        // Check for spam
-        if (PublicChat.plugin.getConfig().getBoolean("AntiSpam.enabled", true)) {
-            AntiSpam.SpamCheckResult spamCheck = antiSpam.checkMessage(player, message);
-            if (spamCheck.isSpam()) {
-                if (PublicChat.plugin.getConfig().getBoolean("ChatCo.debugBlacklistBlocking", false)) {
-                    plugin.getLogger().info("Blocked spam from " + player.getName() + ": " + spamCheck.getReason());
-                }
-                event.setMessage("[SPAM] ***WAS NOT SENT*** - " + message);
-                event.setCancelled(true);
-                return;
-            }
         }
 
         // Apply prefix colors

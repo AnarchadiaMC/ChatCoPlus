@@ -28,7 +28,6 @@ public class Main extends JavaPlugin {
     private Announcer announcer;
     public Collection<ChatPlayer> playerList;
     private BlacklistFilter blacklistFilter;
-    private AntiSpam antiSpam;
 
     @Override
     public void onDisable() {
@@ -63,15 +62,6 @@ public class Main extends JavaPlugin {
             blacklistFilter.reloadBlacklist();
         }
     }
-    
-    /**
-     * Reload the anti-spam system
-     */
-    public void reloadAntiSpam() {
-        if (antiSpam != null) {
-            antiSpam.reloadConfig();
-        }
-    }
 
     @Override
     public void onEnable() {
@@ -85,16 +75,12 @@ public class Main extends JavaPlugin {
         // Initialize blacklist filter
         blacklistFilter = new BlacklistFilter(this);
 
-        // Initialize anti-spam system
-        antiSpam = new AntiSpam(this);
-
         final PluginManager pm = getServer().getPluginManager();
-        pm.registerEvents(antiSpam, this);
-        pm.registerEvents(new PublicChat(this, antiSpam), this);
+        pm.registerEvents(new PublicChat(this), this);
         pm.registerEvents(new BlackholeModule(this), this);
 
         if (getConfig().getBoolean("ChatCo.whisperChangesEnabled", true)) {
-            pm.registerEvents(new Whispers(this, antiSpam), this);
+            pm.registerEvents(new Whispers(this), this);
         }
 
         if (getConfig().getBoolean("ChatCo.announcements.enabled", true)) {
@@ -337,12 +323,10 @@ public class Main extends JavaPlugin {
                 saveConfig();
                 reloadAnnouncer();
                 reloadBlacklistFilter();
-                reloadAntiSpam();
                 BlackholeModule.reloadConfiguration();
                 sender.sendMessage("§aConfig reloaded successfully!");
                 sender.sendMessage("§7- Announcer settings");
                 sender.sendMessage("§7- Blacklist filter");
-                sender.sendMessage("§7- Anti-spam settings");
                 sender.sendMessage("§7- Blackhole/mute settings");
                 return true;
             }

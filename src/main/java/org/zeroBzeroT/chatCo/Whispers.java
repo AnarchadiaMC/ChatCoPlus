@@ -29,11 +29,9 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 public class Whispers implements Listener {
     private final Main plugin;
-    private final AntiSpam antiSpam;
 
-    public Whispers(Main plugin, AntiSpam antiSpam) {
+    public Whispers(Main plugin) {
         this.plugin = plugin;
-        this.antiSpam = antiSpam;
     }
 
     private static final Map<String, String> COLOR_PLACEHOLDER_MAP = new HashMap<>();
@@ -207,15 +205,6 @@ public class Whispers implements Listener {
                     return;
                 }
                 
-                // Check for spam
-                if (plugin.getConfig().getBoolean("AntiSpam.enabled", true)) {
-                    AntiSpam.SpamCheckResult spamCheck = antiSpam.checkMessage(sender, whisperMessage);
-                    if (spamCheck.isSpam()) {
-                        event.setCancelled(true);
-                        return;
-                    }
-                }
-                
                 sendPrivateMessage(sender, target, whisperMessage);
             }
 
@@ -254,15 +243,6 @@ public class Whispers implements Listener {
                     }
                     event.setCancelled(true);
                     return;
-                }
-                
-                // Check for spam
-                if (plugin.getConfig().getBoolean("AntiSpam.enabled", true)) {
-                    AntiSpam.SpamCheckResult spamCheck = antiSpam.checkMessage(sender, whisperMessage);
-                    if (spamCheck.isSpam()) {
-                        event.setCancelled(true);
-                        return;
-                    }
                 }
                 
                 sendPrivateMessage(sender, target, whisperMessage);
