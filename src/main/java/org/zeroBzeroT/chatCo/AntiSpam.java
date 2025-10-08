@@ -61,6 +61,13 @@ public class AntiSpam implements Listener {
     }
     
     /**
+     * Reload configuration from file
+     */
+    public void reloadConfig() {
+        loadConfig();
+    }
+    
+    /**
      * Calculate player risk score based on profile
      * Returns penalty points based on lack of experience, playtime, and activity
      * Higher score = more suspicious (new/inactive player)

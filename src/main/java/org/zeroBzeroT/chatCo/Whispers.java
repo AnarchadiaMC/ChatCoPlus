@@ -202,7 +202,6 @@ public class Whispers implements Listener {
                 if (plugin.getConfig().getBoolean("AntiSpam.enabled", true)) {
                     AntiSpam.SpamCheckResult spamCheck = antiSpam.checkMessage(sender, whisperMessage);
                     if (spamCheck.isSpam()) {
-                        sender.sendMessage("§c[AntiSpam] " + spamCheck.getReason());
                         event.setCancelled(true);
                         return;
                     }
@@ -251,7 +250,6 @@ public class Whispers implements Listener {
                 if (plugin.getConfig().getBoolean("AntiSpam.enabled", true)) {
                     AntiSpam.SpamCheckResult spamCheck = antiSpam.checkMessage(sender, whisperMessage);
                     if (spamCheck.isSpam()) {
-                        sender.sendMessage("§c[AntiSpam] " + spamCheck.getReason());
                         event.setCancelled(true);
                         return;
                     }

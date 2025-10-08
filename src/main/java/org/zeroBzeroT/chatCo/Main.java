@@ -63,6 +63,15 @@ public class Main extends JavaPlugin {
             blacklistFilter.reloadBlacklist();
         }
     }
+    
+    /**
+     * Reload the anti-spam system
+     */
+    public void reloadAntiSpam() {
+        if (antiSpam != null) {
+            antiSpam.reloadConfig();
+        }
+    }
 
     @Override
     public void onEnable() {
@@ -328,7 +337,13 @@ public class Main extends JavaPlugin {
                 saveConfig();
                 reloadAnnouncer();
                 reloadBlacklistFilter();
-                sender.sendMessage("Config reloaded");
+                reloadAntiSpam();
+                BlackholeModule.reloadConfiguration();
+                sender.sendMessage("§aConfig reloaded successfully!");
+                sender.sendMessage("§7- Announcer settings");
+                sender.sendMessage("§7- Blacklist filter");
+                sender.sendMessage("§7- Anti-spam settings");
+                sender.sendMessage("§7- Blackhole/mute settings");
                 return true;
             }
             

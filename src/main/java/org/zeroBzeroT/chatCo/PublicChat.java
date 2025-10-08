@@ -83,7 +83,8 @@ public class PublicChat implements Listener {
         }
         
         // Check for blacklisted words
-        if (PublicChat.plugin.getBlacklistFilter().containsBlacklistedWord(message)) {
+        if (PublicChat.plugin.getBlacklistFilter() != null && 
+            PublicChat.plugin.getBlacklistFilter().containsBlacklistedWord(message)) {
             // Log blocked message if debug is enabled
             if (PublicChat.plugin.getConfig().getBoolean("ChatCo.debugBlacklistBlocking", false)) {
                 plugin.getLogger().info("Blocked blacklisted word from " + player.getName() + ": " + message);
@@ -96,7 +97,10 @@ public class PublicChat implements Listener {
         if (PublicChat.plugin.getConfig().getBoolean("AntiSpam.enabled", true)) {
             AntiSpam.SpamCheckResult spamCheck = antiSpam.checkMessage(player, message);
             if (spamCheck.isSpam()) {
-                player.sendMessage("§c[AntiSpam] " + spamCheck.getReason());
+                // Log blocked spam if debug enabled
+                if (PublicChat.plugin.getConfig().getBoolean("ChatCo.debugBlacklistBlocking", false)) {
+                    plugin.getLogger().info("Blocked spam from " + player.getName() + ": " + spamCheck.getReason());
+                }
                 event.setCancelled(true);
                 return;
             }
@@ -121,7 +125,7 @@ public class PublicChat implements Listener {
         event.message(processedComponent);
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
     public void filterChatRecipients(AsyncChatEvent event) {
         Player player = event.getPlayer();
         boolean chatDisabledGlobal = PublicChat.plugin.getConfig().getBoolean("ChatCo.chatDisabled", false);
