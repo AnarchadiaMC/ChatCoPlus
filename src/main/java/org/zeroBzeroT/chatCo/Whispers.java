@@ -76,15 +76,14 @@ public class Whispers implements Listener {
 
     private void sendPrivateMessage(Player sender, Player receiver, String message) {
         // Double-check for blacklisted words and unicode as a safety measure
-        // This prevents any bypasses that might occur in the command handling
         if (plugin.getConfig().getBoolean("ChatCo.blockUnicodeText", false) && containsUnicode(message)) {
             if (plugin.getConfig().getBoolean("ChatCo.debugUnicodeBlocking", false)) {
                 plugin.getLogger().info("Blocked unicode whisper from " + sender.getName() + ": " + message);
             }
             return;
         }
-        
-        if (((Main) plugin).getBlacklistFilter().containsBlacklistedWord(message)) {
+        if (((Main) plugin).getBlacklistFilter() != null && 
+            ((Main) plugin).getBlacklistFilter().containsBlacklistedWord(message)) {
             if (plugin.getConfig().getBoolean("ChatCo.debugBlacklistBlocking", false)) {
                 plugin.getLogger().info("Blocked blacklisted whisper from " + sender.getName() + ": " + message);
             }
@@ -137,12 +136,21 @@ public class Whispers implements Listener {
         if (doNotSend || isIgnoring) {
             logText = "***WAS NOT SENT*** " + logText;
         }
-        if (plugin.getConfig().getBoolean("ChatCo.whisperLog", false)) {
-            whisperLog(logText, sender.getName());
-        }
-        if (plugin.getConfig().getBoolean("ChatCo.whisperMonitoring", false) && !BlackholeModule.isPlayerHidden(sender)) {
-            plugin.getLogger().log(Level.INFO, "[WHISPER] {0} -> {1}: {2}", 
-                new Object[]{sender.getName(), receiver.getName(), stripColor(logText)});
+        
+        try {
+            if (plugin.getConfig().getBoolean("ChatCo.whisperLog", false)) {
+                whisperLog(logText, sender.getName());
+            }
+            
+            boolean whisperMonitoring = plugin.getConfig().getBoolean("ChatCo.whisperMonitoring", false);
+            boolean isHidden = BlackholeModule.isPlayerHidden(sender);
+            
+            if (whisperMonitoring && !isHidden) {
+                plugin.getLogger().log(Level.INFO, "[WHISPER] {0} -> {1}: {2}", 
+                    new Object[]{sender.getName(), receiver.getName(), stripColor(logText)});
+            }
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "Error logging whisper", e);
         }
     }
 
@@ -190,7 +198,8 @@ public class Whispers implements Listener {
                 }
                 
                 // Check for blacklisted words
-                if (((Main) plugin).getBlacklistFilter().containsBlacklistedWord(whisperMessage)) {
+                if (((Main) plugin).getBlacklistFilter() != null && 
+                    ((Main) plugin).getBlacklistFilter().containsBlacklistedWord(whisperMessage)) {
                     if (plugin.getConfig().getBoolean("ChatCo.debugBlacklistBlocking", false)) {
                         plugin.getLogger().info("Blocked blacklisted whisper from " + sender.getName() + ": " + whisperMessage);
                     }
@@ -238,7 +247,8 @@ public class Whispers implements Listener {
                 }
                 
                 // Check for blacklisted words
-                if (((Main) plugin).getBlacklistFilter().containsBlacklistedWord(whisperMessage)) {
+                if (((Main) plugin).getBlacklistFilter() != null && 
+                    ((Main) plugin).getBlacklistFilter().containsBlacklistedWord(whisperMessage)) {
                     if (plugin.getConfig().getBoolean("ChatCo.debugBlacklistBlocking", false)) {
                         plugin.getLogger().info("Blocked blacklisted whisper from " + sender.getName() + ": " + whisperMessage);
                     }
@@ -286,7 +296,8 @@ public class Whispers implements Listener {
             }
             
             // Check for blacklisted words
-            if (((Main) plugin).getBlacklistFilter().containsBlacklistedWord(whisperMessage)) {
+            if (((Main) plugin).getBlacklistFilter() != null && 
+                ((Main) plugin).getBlacklistFilter().containsBlacklistedWord(whisperMessage)) {
                 if (plugin.getConfig().getBoolean("ChatCo.debugBlacklistBlocking", false)) {
                     plugin.getLogger().info("Blocked blacklisted whisper from " + sender.getName() + ": " + whisperMessage);
                 }

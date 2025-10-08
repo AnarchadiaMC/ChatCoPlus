@@ -115,7 +115,14 @@
     </repositories>
 
     <dependencies>
-        <!-- Folia API (includes Paper API) -->
+        <!-- Paper API (for Paper servers) -->
+        <dependency>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>${minecraft.version}-R0.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Folia API (for Folia servers, includes Paper API) -->
         <dependency>
             <groupId>dev.folia</groupId>
             <artifactId>folia-api</artifactId>

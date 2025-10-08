@@ -25,6 +25,9 @@ public class AntiSpam implements Listener {
     private double globalSimilarityThreshold = 0.85; // 85% similar to any recent message
     private int minMovementDistance = 2; // blocks moved before first message
     private boolean requireMovement = true;
+    private int blockThreshold = 150; // Score at which messages are blocked
+    private int warningThreshold = 120; // Score at which warnings are issued
+    private int softWarningThreshold = 80; // Score at which soft warnings are shown
     
     // Player profile scoring weights
     private int noMovementPenalty = 30;
@@ -54,6 +57,9 @@ public class AntiSpam implements Listener {
         this.globalSimilarityThreshold = plugin.getConfig().getDouble("AntiSpam.globalSimilarityThreshold", 0.85);
         this.minMovementDistance = plugin.getConfig().getInt("AntiSpam.minMovementDistance", 2);
         this.requireMovement = plugin.getConfig().getBoolean("AntiSpam.requireMovement", true);
+        this.blockThreshold = plugin.getConfig().getInt("AntiSpam.blockThreshold", 150);
+        this.warningThreshold = plugin.getConfig().getInt("AntiSpam.warningThreshold", 120);
+        this.softWarningThreshold = plugin.getConfig().getInt("AntiSpam.softWarningThreshold", 80);
         this.noMovementPenalty = plugin.getConfig().getInt("AntiSpam.Penalties.noMovement", 30);
         this.lowPlaytimePenalty = plugin.getConfig().getInt("AntiSpam.Penalties.lowPlaytime", 25);
         this.noLevelsPenalty = plugin.getConfig().getInt("AntiSpam.Penalties.noLevels", 20);
@@ -273,11 +279,11 @@ public class AntiSpam implements Listener {
         }
         
         // Determine if message should be blocked
-        if (currentScore >= 100) {
+        if (currentScore >= blockThreshold) {
             return new SpamCheckResult(true, "Spam detected: " + String.join(", ", reasons) + ". Calm down!");
-        } else if (currentScore >= 75) {
+        } else if (currentScore >= warningThreshold) {
             return new SpamCheckResult(true, "Possible spam: " + String.join(", ", reasons) + ". Slow down!");
-        } else if (currentScore >= 50) {
+        } else if (currentScore >= softWarningThreshold) {
             // Warning only, don't block
             player.sendMessage("§e[AntiSpam] Warning: " + String.join(", ", reasons));
         }
@@ -490,7 +496,7 @@ public class AntiSpam implements Listener {
         return playerSpamScore.getOrDefault(uuid, 0);
     }
     
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerMove(PlayerMoveEvent event) {
         if (event.getFrom().distanceSquared(event.getTo()) < MOVEMENT_THRESHOLD * MOVEMENT_THRESHOLD) {
             return; // Ignore head movement

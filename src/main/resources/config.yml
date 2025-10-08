@@ -100,6 +100,14 @@ AntiSpam:
   # 0.85 = 85% similar to any recent message will be flagged
   globalSimilarityThreshold: 0.85
   
+  # Score thresholds for actions
+  # blockThreshold: Score at which messages are blocked (150 = allows new players to chat)
+  blockThreshold: 150
+  # warningThreshold: Score at which messages are blocked with warning (120 = still allows new players)
+  warningThreshold: 120
+  # softWarningThreshold: Score at which a warning is shown but message goes through (80 = warns suspicious activity)
+  softWarningThreshold: 80
+  
   # Penalty Scoring - Points added for suspicious behavior
   Penalties:
     # Player hasn't moved or moved very little

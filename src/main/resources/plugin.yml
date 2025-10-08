@@ -10,7 +10,7 @@ folia-supported: true
 commands:
   togglechat:
     description: Enables or disables chat for the player.
-    usage: /toggleechat
+    usage: /togglechat
   toggletells:
     description: Enables or disables whispers for the player.
     usage: /toggletells
