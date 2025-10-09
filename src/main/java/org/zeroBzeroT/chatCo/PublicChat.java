@@ -71,7 +71,7 @@ public class PublicChat implements Listener {
             if (PublicChat.plugin.getConfig().getBoolean("ChatCo.debugUnicodeBlocking", false)) {
                 plugin.getLogger().info("Blocked unicode message from " + player.getName() + ": " + message);
             }
-            event.setMessage("[UNICODE] ***WAS NOT SENT*** " + message);
+            event.setMessage("[UNICODE] ***WAS NOT SENT*** - Blocked Message: " + message);
             event.setCancelled(true);
             return;
         }
@@ -81,7 +81,7 @@ public class PublicChat implements Listener {
             if (PublicChat.plugin.getConfig().getBoolean("ChatCo.debugBlacklistBlocking", false)) {
                 plugin.getLogger().info("Blocked blacklisted word from " + player.getName() + ": " + message);
             }
-            event.setMessage("[BLOCKED] ***WAS NOT SENT*** " + message);
+            event.setMessage("[BLACKLIST] ***WAS NOT SENT*** - Blocked Message: " + message);
             event.setCancelled(true);
             return;
         }
