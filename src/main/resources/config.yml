@@ -95,3 +95,32 @@ ChatCo:
 # BLACK, DARK_BLUE, DARK_GREEN, DARK_AQUA, DARK_RED, DARK_PURPLE
 # GOLD, GRAY, DARK_GRAY, BLUE, GREEN, AQUA, RED, LIGHT_PURPLE
 # YELLOW, WHITE
+
+# GuardDog Anti-Spam System
+# Protects against bot spam while minimizing disruption to legitimate players
+GuardDog:
+  enabled: true
+  
+  # Visual captcha - verifies player clicks correct item in GUI
+  captcha:
+    enabled: true
+    duration_hours: 24      # How long verification lasts (per IP)
+    max_attempts: 3         # Wrong clicks before kick
+  
+  # Heuristics - detects bot-like behavior patterns  
+  heuristics:
+    enabled: true
+    min_move_distance: 2.0  # Blocks to move before chatting allowed
+    min_account_age_seconds: 5  # Seconds after join before chatting allowed
+  
+  # Rate limiting - prevents chat flood (token bucket algorithm)
+  ratelimit:
+    enabled: true
+    max_burst: 3            # Messages allowed in quick succession
+    refill_seconds: 2       # Seconds to regain one message token
+  
+  # Similarity filter - blocks repeated/similar messages
+  similarity:
+    enabled: true
+    threshold: 0.85         # 0.0-1.0, higher = stricter
+    check_global_chat: true # Also check against other players' messages

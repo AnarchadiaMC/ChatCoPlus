@@ -17,6 +17,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
+import org.zeroBzeroT.chatCo.guarddog.GuardDogModule;
 import static org.zeroBzeroT.chatCo.Utils.componentFromLegacyText;
 import static org.zeroBzeroT.chatCo.Utils.saveStreamToFile;
 
@@ -28,6 +29,7 @@ public class Main extends JavaPlugin {
     private Announcer announcer;
     public Collection<ChatPlayer> playerList;
     private BlacklistFilter blacklistFilter;
+    private GuardDogModule guardDog;
 
     @Override
     public void onDisable() {
@@ -63,6 +65,14 @@ public class Main extends JavaPlugin {
         }
     }
 
+    /**
+     * Get the GuardDog anti-spam module
+     * @return The GuardDog module instance
+     */
+    public GuardDogModule getGuardDog() {
+        return guardDog;
+    }
+
     @Override
     public void onEnable() {
         playerList = Collections.synchronizedCollection(new ArrayList<>());
@@ -92,6 +102,9 @@ public class Main extends JavaPlugin {
             Metrics metrics = new Metrics(this, 16309);
         }
 
+        // Initialize GuardDog anti-spam system
+        guardDog = new GuardDogModule(this);
+        guardDog.registerEvents();
     }
 
 
