@@ -24,23 +24,33 @@ import net.kyori.adventure.text.format.NamedTextColor;
 public class GuardDogModule implements Listener {
     
     private final JavaPlugin plugin;
-    private final boolean enabled;
+    private boolean enabled;
     
     // Sub-modules
-    private final CaptchaManager captchaManager;
-    private final RateLimiter rateLimiter;
-    private final SimilarityFilter similarityFilter;
-    private final BotHeuristics botHeuristics;
+    private CaptchaManager captchaManager;
+    private RateLimiter rateLimiter;
+    private SimilarityFilter similarityFilter;
+    private BotHeuristics botHeuristics;
     
     // Config values
-    private final boolean captchaEnabled;
-    private final boolean rateLimitEnabled;
-    private final boolean similarityEnabled;
-    private final boolean heuristicsEnabled;
+    private boolean captchaEnabled;
+    private boolean rateLimitEnabled;
+    private boolean similarityEnabled;
+    private boolean heuristicsEnabled;
     
     public GuardDogModule(JavaPlugin plugin) {
         this.plugin = plugin;
+        loadConfig();
         
+        if (enabled) {
+            plugin.getLogger().info("[GuardDog] Anti-spam module enabled");
+        }
+    }
+    
+    /**
+     * Loads or reloads configuration and recreates sub-modules.
+     */
+    private void loadConfig() {
         // Load main toggle
         this.enabled = plugin.getConfig().getBoolean("GuardDog.enabled", true);
         
@@ -67,10 +77,15 @@ public class GuardDogModule implements Listener {
         double minMoveDistance = plugin.getConfig().getDouble("GuardDog.heuristics.min_move_distance", 2.0);
         int minAccountAge = plugin.getConfig().getInt("GuardDog.heuristics.min_account_age_seconds", 5);
         this.botHeuristics = new BotHeuristics(plugin, minMoveDistance, minAccountAge);
-        
-        if (enabled) {
-            plugin.getLogger().info("[GuardDog] Anti-spam module enabled");
-        }
+    }
+    
+    /**
+     * Reloads GuardDog configuration and all sub-modules.
+     * Note: This clears rate limit and similarity history, but preserves captcha verifications.
+     */
+    public void reload() {
+        loadConfig();
+        plugin.getLogger().info("[GuardDog] Configuration reloaded");
     }
     
     /**

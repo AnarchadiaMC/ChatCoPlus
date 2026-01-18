@@ -66,6 +66,15 @@ public class Main extends JavaPlugin {
     }
 
     /**
+     * Reload the GuardDog anti-spam module
+     */
+    public void reloadGuardDog() {
+        if (guardDog != null) {
+            guardDog.reload();
+        }
+    }
+
+    /**
      * Get the GuardDog anti-spam module
      * @return The GuardDog module instance
      */
@@ -337,10 +346,12 @@ public class Main extends JavaPlugin {
                 reloadAnnouncer();
                 reloadBlacklistFilter();
                 BlackholeModule.reloadConfiguration();
+                reloadGuardDog();
                 sender.sendMessage("§aConfig reloaded successfully!");
                 sender.sendMessage("§7- Announcer settings");
                 sender.sendMessage("§7- Blacklist filter");
                 sender.sendMessage("§7- Blackhole/mute settings");
+                sender.sendMessage("§7- GuardDog anti-spam");
                 return true;
             }
             
