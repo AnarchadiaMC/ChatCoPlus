@@ -101,6 +101,11 @@ ChatCo:
 GuardDog:
   enabled: true
   
+  # Players in this list will bypass all GuardDog checks (names are case-insensitive)
+  whitelist:
+    - "Notch"
+    - "Jeb_"
+  
   # Visual captcha - triggers after suspicious behavior is detected
   captcha:
     enabled: true

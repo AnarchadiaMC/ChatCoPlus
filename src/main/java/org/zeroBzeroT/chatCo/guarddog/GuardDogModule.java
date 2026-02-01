@@ -45,6 +45,7 @@ public class GuardDogModule implements Listener {
     private boolean similarityEnabled;
     private boolean heuristicsEnabled;
     private int suspicionThreshold;
+    private java.util.List<String> whitelist;
 
     public GuardDogModule(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -61,6 +62,13 @@ public class GuardDogModule implements Listener {
     private void loadConfig() {
         // Load main toggle
         this.enabled = plugin.getConfig().getBoolean("GuardDog.enabled", true);
+
+        // Load whitelist (lowercase for case-insensitive check)
+        this.whitelist = new java.util.ArrayList<>();
+        java.util.List<String> rawList = plugin.getConfig().getStringList("GuardDog.whitelist");
+        for (String name : rawList) {
+            this.whitelist.add(name.toLowerCase());
+        }
 
         // Load captcha config
         this.captchaEnabled = plugin.getConfig().getBoolean("GuardDog.captcha.enabled", true);
@@ -160,6 +168,12 @@ public class GuardDogModule implements Listener {
 
         // BYPASS: Permission to bypass GuardDog
         if (player.hasPermission("chatco.guarddog.bypass")) {
+            recordMessageIfEnabled(player, message);
+            return;
+        }
+
+        // BYPASS: API Whitelist
+        if (whitelist.contains(player.getName().toLowerCase())) {
             recordMessageIfEnabled(player, message);
             return;
         }
