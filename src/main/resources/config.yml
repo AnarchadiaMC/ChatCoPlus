@@ -101,11 +101,11 @@ ChatCo:
 GuardDog:
   enabled: true
   
-  # Visual captcha - verifies player clicks correct item in GUI
+  # Visual captcha - triggers after suspicious behavior is detected
   captcha:
     enabled: true
-    duration_hours: 24      # How long verification lasts (per IP)
-    max_attempts: 3         # Wrong clicks before kick
+    max_attempts: 3           # Wrong clicks before kick
+    suspicion_threshold: 2    # Violations before captcha triggers
   
   # Heuristics - detects bot-like behavior patterns  
   heuristics:
