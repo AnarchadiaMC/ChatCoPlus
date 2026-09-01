@@ -88,6 +88,13 @@ public class Whispers implements Listener {
             return;
         }
         
+        // GuardDog integration
+        if (plugin.getGuardDog() != null && plugin.getGuardDog().isEnabled()) {
+            if (!plugin.getGuardDog().checkMessage(sender, message, false)) {
+                return;
+            }
+        }
+        
         boolean doNotSend = false;
         boolean isIgnoring = false;
         ChatPlayer target = ((Main) plugin).getChatPlayer(receiver);

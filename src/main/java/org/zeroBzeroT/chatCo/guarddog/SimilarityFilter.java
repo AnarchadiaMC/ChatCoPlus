@@ -44,8 +44,8 @@ public class SimilarityFilter {
             }
         }
         
-        // Check global history if enabled
-        if (checkGlobal) {
+        // Check global history if enabled (skip for short messages like "gg", "lol")
+        if (checkGlobal && normalized.length() >= 6) {
             synchronized (globalLock) {
                 for (String prev : globalHistory) {
                     if (calculateSimilarity(normalized, prev) >= threshold) {
@@ -106,11 +106,15 @@ public class SimilarityFilter {
     
     /**
      * Normalizes a message for comparison.
-     * Lowercases, removes extra spaces, strips color codes.
+     * Lowercases, removes extra spaces, strips color codes and noise.
      */
     private String normalize(String message) {
-        // Remove Minecraft color codes (§x)
-        String cleaned = message.replaceAll("§[0-9a-fk-or]", "");
+        // Remove Minecraft color codes (§x) case insensitively
+        String cleaned = message.replaceAll("(?i)§[0-9a-fk-orx]", "");
+        // Remove zero-width spaces and formatting noise
+        cleaned = cleaned.replaceAll("[\\u200B\\u200C\\u200D\\uFEFF\\u00AD]", "");
+        // Remove basic punctuation often used to bypass spam filters
+        cleaned = cleaned.replaceAll("[\\.,\\-_/\\\\|]", "");
         // Lowercase and trim
         cleaned = cleaned.toLowerCase().trim();
         // Collapse multiple spaces
@@ -139,8 +143,14 @@ public class SimilarityFilter {
             return 0.0;
         }
         
-        int distance = levenshteinDistance(s1, s2);
         int maxLen = Math.max(s1.length(), s2.length());
+        
+        // Short-circuit: if length difference is too large, it can't possibly meet the threshold
+        if (Math.abs(s1.length() - s2.length()) / (double) maxLen > (1.0 - threshold)) {
+            return 0.0;
+        }
+        
+        int distance = levenshteinDistance(s1, s2);
         return 1.0 - ((double) distance / maxLen);
     }
     

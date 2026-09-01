@@ -51,12 +51,16 @@ public class RateLimiter {
      */
     public long getSecondsUntilRefill(UUID playerId) {
         TokenBucket bucket = buckets.get(playerId);
-        if (bucket == null || bucket.tokens > 0) {
+        if (bucket == null) {
+            return 0;
+        }
+        bucket.refill();
+        if (bucket.tokens > 0) {
             return 0;
         }
         long elapsed = System.currentTimeMillis() - bucket.lastRefillTime;
         long remaining = refillIntervalMs - elapsed;
-        return Math.max(0, remaining / 1000);
+        return Math.max(0, (remaining + 999) / 1000); // Ceiling division for seconds
     }
     
     /**
@@ -105,7 +109,7 @@ public class RateLimiter {
             int tokensToAdd = (int) (elapsed / refillIntervalMs);
             if (tokensToAdd > 0) {
                 tokens = Math.min(maxTokens, tokens + tokensToAdd);
-                lastRefillTime = now;
+                lastRefillTime += ((long) tokensToAdd * refillIntervalMs);
             }
         }
     }

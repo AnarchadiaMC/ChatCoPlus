@@ -25,11 +25,20 @@ public class BotHeuristics implements Listener {
     private final double minMoveDistance;
     private final long minAccountAgeMs;
 
-    @SuppressWarnings("unused")
     public BotHeuristics(JavaPlugin plugin, double minMoveDistance, int minAccountAgeSeconds) {
         // plugin parameter kept for API consistency but not currently used
         this.minMoveDistance = minMoveDistance;
         this.minAccountAgeMs = minAccountAgeSeconds * 1000L;
+        
+        // Initialize already online players for reload safety
+        for (Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+            org.bukkit.Location loc = p.getLocation();
+            playerData.put(p.getUniqueId(), new PlayerData(
+                    System.currentTimeMillis(),
+                    loc.getX(), loc.getZ(),
+                    0.0
+            ));
+        }
     }
 
     /**
@@ -87,6 +96,10 @@ public class BotHeuristics implements Listener {
      * Checks if player passes all heuristic checks.
      */
     public boolean passesAllChecks(Player player) {
+        // Veteran bypass: players with over 5 minutes of total playtime bypass heuristics
+        if (player.getStatistic(org.bukkit.Statistic.PLAY_ONE_MINUTE) > 6000) {
+            return true;
+        }
         return hasWaitedLongEnough(player) && hasMovedEnough(player);
     }
 
@@ -94,6 +107,9 @@ public class BotHeuristics implements Listener {
      * Gets a descriptive reason why player failed checks.
      */
     public String getFailureReason(Player player) {
+        if (player.getStatistic(org.bukkit.Statistic.PLAY_ONE_MINUTE) > 6000) {
+            return null;
+        }
         if (!hasWaitedLongEnough(player)) {
             long seconds = getSecondsUntilCanChat(player);
             return "Please wait " + seconds + " more second(s) before chatting.";

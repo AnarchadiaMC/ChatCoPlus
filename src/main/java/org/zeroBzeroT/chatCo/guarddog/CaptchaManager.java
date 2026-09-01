@@ -72,42 +72,46 @@ public class CaptchaManager implements Listener {
      * Opens the captcha GUI for a player.
      */
     public void showCaptcha(Player player) {
+        int attempts = 0;
         if (hasPendingCaptcha(player)) {
-            return; // Already showing
+            attempts = activeSessions.get(player.getUniqueId()).attempts;
         }
 
         // Select random correct item
         Material correctItem = CAPTCHA_ITEMS[new Random().nextInt(CAPTCHA_ITEMS.length)];
         int correctSlot = new Random().nextInt(INVENTORY_SIZE);
+        
+        String correctName = formatMaterialName(correctItem);
 
         // Create inventory
-        Inventory inv = Bukkit.createInventory(null, INVENTORY_SIZE, Component.text(CAPTCHA_TITLE));
+        Inventory inv = Bukkit.createInventory(null, INVENTORY_SIZE, Component.text("Verify: Click the " + correctName));
 
-        // Fill with gray glass panes (wrong answers)
-        ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta fillerMeta = filler.getItemMeta();
-        fillerMeta.displayName(Component.text(" "));
-        filler.setItemMeta(fillerMeta);
-
+        // Fill with random items from CAPTCHA_ITEMS that are NOT the correct item
+        Random random = new Random();
         for (int i = 0; i < INVENTORY_SIZE; i++) {
-            inv.setItem(i, filler.clone());
+            if (i == correctSlot) {
+                // Place correct item
+                ItemStack correctStack = new ItemStack(correctItem);
+                inv.setItem(correctSlot, correctStack);
+            } else {
+                Material wrongItem;
+                do {
+                    wrongItem = CAPTCHA_ITEMS[random.nextInt(CAPTCHA_ITEMS.length)];
+                } while (wrongItem == correctItem);
+                
+                ItemStack filler = new ItemStack(wrongItem);
+                inv.setItem(i, filler);
+            }
         }
 
-        // Place correct item
-        ItemStack correctStack = new ItemStack(correctItem);
-        ItemMeta correctMeta = correctStack.getItemMeta();
-        correctMeta.displayName(Component.text("CLICK ME!", NamedTextColor.GREEN, TextDecoration.BOLD));
-        correctStack.setItemMeta(correctMeta);
-        inv.setItem(correctSlot, correctStack);
-
         // Store session
-        activeSessions.put(player.getUniqueId(), new CaptchaSession(correctSlot, 0));
+        activeSessions.put(player.getUniqueId(), new CaptchaSession(correctSlot, attempts));
 
         // Open inventory on main thread
         Bukkit.getScheduler().runTask(plugin, () -> {
             player.openInventory(inv);
             player.sendMessage(Component.text("Please click the ", NamedTextColor.YELLOW)
-                    .append(Component.text(formatMaterialName(correctItem), NamedTextColor.GREEN, TextDecoration.BOLD))
+                    .append(Component.text(correctName, NamedTextColor.GREEN, TextDecoration.BOLD))
                     .append(Component.text(" to verify you are human.", NamedTextColor.YELLOW)));
         });
     }
@@ -185,13 +189,9 @@ public class CaptchaManager implements Listener {
             return;
         }
 
-        // Player closed captcha without solving - reopen after short delay
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (player.isOnline() && activeSessions.containsKey(player.getUniqueId())) {
-                player.sendMessage(Component.text("You must complete the captcha to chat!", NamedTextColor.RED));
-                showCaptcha(player);
-            }
-        }, 20L); // 1 second delay
+        // Inform player they still need to complete it, but don't force reopen 
+        // to prevent soft-locks when they are trying to do other things.
+        player.sendMessage(Component.text("You must complete the captcha before you can chat!", NamedTextColor.RED));
     }
 
     @EventHandler

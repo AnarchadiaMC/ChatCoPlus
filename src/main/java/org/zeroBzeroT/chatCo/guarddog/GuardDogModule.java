@@ -36,8 +36,12 @@ public class GuardDogModule implements Listener {
     private SimilarityFilter similarityFilter;
     private BotHeuristics botHeuristics;
 
+    private static class SuspicionData {
+        int score = 0;
+        long lastUpdate = System.currentTimeMillis();
+    }
     // Suspicion tracking - triggers captcha after threshold
-    private final Map<UUID, Integer> suspicionScores = new ConcurrentHashMap<>();
+    private final Map<UUID, SuspicionData> suspicionScores = new ConcurrentHashMap<>();
 
     // Config values
     private boolean captchaEnabled;
@@ -124,9 +128,17 @@ public class GuardDogModule implements Listener {
      * @return true if player should now be captcha-challenged
      */
     private boolean incrementSuspicion(Player player) {
-        UUID playerId = player.getUniqueId();
-        int newScore = suspicionScores.merge(playerId, 1, Integer::sum);
-        return newScore >= suspicionThreshold;
+        SuspicionData data = suspicionScores.computeIfAbsent(player.getUniqueId(), k -> new SuspicionData());
+        long now = System.currentTimeMillis();
+        // Decay score by 1 for every 60 seconds elapsed since last update
+        long elapsed = now - data.lastUpdate;
+        if (elapsed > 60000) {
+            int decay = (int) (elapsed / 60000);
+            data.score = Math.max(0, data.score - decay);
+        }
+        data.score++;
+        data.lastUpdate = now;
+        return data.score >= suspicionThreshold;
     }
 
     /**
@@ -140,7 +152,16 @@ public class GuardDogModule implements Listener {
      * Gets current suspicion score for a player.
      */
     public int getSuspicionScore(Player player) {
-        return suspicionScores.getOrDefault(player.getUniqueId(), 0);
+        SuspicionData data = suspicionScores.get(player.getUniqueId());
+        if (data == null) {
+            return 0;
+        }
+        long elapsed = System.currentTimeMillis() - data.lastUpdate;
+        if (elapsed > 60000) {
+            int decay = (int) (elapsed / 60000);
+            return Math.max(0, data.score - decay);
+        }
+        return data.score;
     }
 
     /**
@@ -150,82 +171,89 @@ public class GuardDogModule implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onAsyncChat(AsyncPlayerChatEvent event) {
-        if (!enabled) {
+        if (!enabled || event.isCancelled()) {
             return;
         }
-        if (event.isCancelled()) {
-            return;
+        
+        if (!checkMessage(event.getPlayer(), event.getMessage(), true)) {
+            event.setCancelled(true);
         }
+    }
 
-        Player player = event.getPlayer();
-        String message = event.getMessage();
+    /**
+     * Checks a message against all GuardDog filters.
+     * @param player The player sending the message
+     * @param message The message content
+     * @param record Whether to record this message in similarity history if it passes
+     * @return true if the message is allowed, false if blocked
+     */
+    public boolean checkMessage(Player player, String message, boolean record) {
+        if (!enabled) {
+            return true;
+        }
 
         // BYPASS: Ops bypass all checks
         if (player.isOp()) {
-            recordMessageIfEnabled(player, message);
-            return;
+            if (record) recordMessageIfEnabled(player, message);
+            return true;
         }
 
         // BYPASS: Permission to bypass GuardDog
         if (player.hasPermission("chatco.guarddog.bypass")) {
-            recordMessageIfEnabled(player, message);
-            return;
+            if (record) recordMessageIfEnabled(player, message);
+            return true;
         }
 
         // BYPASS: API Whitelist
         if (whitelist.contains(player.getName().toLowerCase())) {
-            recordMessageIfEnabled(player, message);
-            return;
+            if (record) recordMessageIfEnabled(player, message);
+            return true;
         }
 
         // CHECK 0: If player has pending captcha, they must solve it first
         if (captchaEnabled && captchaManager.hasPendingCaptcha(player)) {
-            event.setCancelled(true);
             player.sendMessage(Component.text("Complete the captcha first!", NamedTextColor.RED));
-            return;
+            Bukkit.getScheduler().runTask(plugin, () -> captchaManager.showCaptcha(player));
+            return false;
         }
 
         // CHECK 1: Heuristics (join time + movement) - no suspicion tracking, just block
         if (heuristicsEnabled && !botHeuristics.passesAllChecks(player)) {
-            event.setCancelled(true);
             String reason = botHeuristics.getFailureReason(player);
             player.sendMessage(Component.text(reason, NamedTextColor.YELLOW));
-            return;
+            return false;
         }
 
         // CHECK 2: Rate limiting - track suspicion on failure
         if (rateLimitEnabled && !rateLimiter.tryConsume(player.getUniqueId())) {
-            event.setCancelled(true);
-
-            if (captchaEnabled && !captchaManager.isVerifiedThisSession(player)) {
+            if (captchaEnabled) {
                 if (incrementSuspicion(player)) {
                     triggerCaptcha(player, "rate limit violations");
-                    return;
+                    return false;
                 }
             }
 
             long wait = rateLimiter.getSecondsUntilRefill(player.getUniqueId());
             player.sendMessage(Component.text("Slow down! Wait " + Math.max(1, wait) + "s before chatting again.", NamedTextColor.RED));
-            return;
+            return false;
         }
 
         // CHECK 3: Similarity filter - track suspicion on failure
         if (similarityEnabled && similarityFilter.isTooSimilar(player.getUniqueId(), message)) {
-            event.setCancelled(true);
-
-            if (captchaEnabled && !captchaManager.isVerifiedThisSession(player)) {
+            if (captchaEnabled) {
                 if (incrementSuspicion(player)) {
                     triggerCaptcha(player, "repeated message pattern");
-                    return;
+                    return false;
                 }
             }
 
             player.sendMessage(Component.text("Message blocked: too similar to recent messages.", NamedTextColor.RED));
-            return;
+            return false;
         }
 
-        // ALL CHECKS PASSED - Record message for future similarity checks
-        recordMessageIfEnabled(player, message);
+        // ALL CHECKS PASSED
+        if (record) recordMessageIfEnabled(player, message);
+        return true;
     }
 
     /**
