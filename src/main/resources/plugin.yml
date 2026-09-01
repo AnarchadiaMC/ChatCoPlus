@@ -3,6 +3,7 @@ version: '${project.version}'
 main: org.zeroBzeroT.chatCo.Main
 api-version: '1.20'
 depend: [ProtocolLib]
+softdepend: [DiscordSRV]
 authors: [0xB2, ZimTheDestroyer]
 description: A simple chat plugin
 website: https://github.com/0xB2

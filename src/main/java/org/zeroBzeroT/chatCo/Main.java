@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -30,11 +31,16 @@ public class Main extends JavaPlugin {
     public Collection<ChatPlayer> playerList;
     private BlacklistFilter blacklistFilter;
     private GuardDogModule guardDog;
+    private org.zeroBzeroT.chatCo.hooks.DiscordSRVHook discordSRVHook;
 
     @Override
     public void onDisable() {
         if (announcer != null) {
             announcer.disable();
+        }
+        if (discordSRVHook != null) {
+            discordSRVHook.unhook();
+            discordSRVHook = null;
         }
         playerList.clear();
     }
@@ -82,6 +88,14 @@ public class Main extends JavaPlugin {
         return guardDog;
     }
 
+    /**
+     * Get the DiscordSRV hook instance
+     * @return The DiscordSRV hook instance or null if not hooked
+     */
+    public org.zeroBzeroT.chatCo.hooks.DiscordSRVHook getDiscordSRVHook() {
+        return discordSRVHook;
+    }
+
     @Override
     public void onEnable() {
         playerList = Collections.synchronizedCollection(new ArrayList<>());
@@ -114,6 +128,15 @@ public class Main extends JavaPlugin {
         // Initialize GuardDog anti-spam system
         guardDog = new GuardDogModule(this);
         guardDog.registerEvents();
+
+        // Initialize DiscordSRV Hook if DiscordSRV is installed and enabled
+        if (pm.isPluginEnabled("DiscordSRV")) {
+            try {
+                discordSRVHook = new org.zeroBzeroT.chatCo.hooks.DiscordSRVHook(this);
+            } catch (Throwable t) {
+                getLogger().log(Level.WARNING, "Failed to initialize DiscordSRV hook", t);
+            }
+        }
     }
 
 
