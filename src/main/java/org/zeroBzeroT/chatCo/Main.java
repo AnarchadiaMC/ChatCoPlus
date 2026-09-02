@@ -16,7 +16,6 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.zeroBzeroT.chatCo.guarddog.GuardDogModule;
 import static org.zeroBzeroT.chatCo.Utils.componentFromLegacyText;
@@ -263,26 +262,6 @@ public class Main extends JavaPlugin {
                 }
 
                 sender.sendMessage(componentFromLegacyText("&e" + i + " players ignored."));
-
-                return true;
-            } else if (cmd.getName().equalsIgnoreCase("killme")) {
-                if (!(sender instanceof Player)) {
-                    sender.sendMessage(componentFromLegacyText("&cThis command can only be used by players."));
-                    return true;
-                }
-
-
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        if (player.isDead()) {
-                            return;
-                        }
-
-                        // Simply set health to 0 - setLastDamageCause is deprecated and for internal use only
-                        player.setHealth(0.0);
-                    }
-                }.runTask(this);
 
                 return true;
             } else if (cmd.getName().equalsIgnoreCase("spawnpoint")) {
