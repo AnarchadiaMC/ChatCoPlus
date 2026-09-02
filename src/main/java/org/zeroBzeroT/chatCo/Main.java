@@ -1,11 +1,11 @@
 package org.zeroBzeroT.chatCo;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
@@ -28,10 +28,11 @@ public class Main extends JavaPlugin {
     public static File dataFolder;
     private static File Help;
     private Announcer announcer;
-    public Collection<ChatPlayer> playerList;
+    public Map<UUID, ChatPlayer> playerMap;
     private BlacklistFilter blacklistFilter;
     private GuardDogModule guardDog;
     private org.zeroBzeroT.chatCo.hooks.DiscordSRVHook discordSRVHook;
+    private IgnoreDatabase ignoreDatabase;
 
     @Override
     public void onDisable() {
@@ -42,7 +43,11 @@ public class Main extends JavaPlugin {
             discordSRVHook.unhook();
             discordSRVHook = null;
         }
-        playerList.clear();
+        if (ignoreDatabase != null) {
+            ignoreDatabase.close();
+            ignoreDatabase = null;
+        }
+        playerMap.clear();
     }
 
     // Add this method to handle announcer reloading
@@ -98,13 +103,17 @@ public class Main extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        playerList = Collections.synchronizedCollection(new ArrayList<>());
+        playerMap = new ConcurrentHashMap<>();
         getConfig().options().copyDefaults(true);
         getConfig().options().parseComments(true);
 
         saveResourceFiles();
         toggleConfigValue(0);
-        
+
+        // Initialize ignore database and migrate old text files
+        ignoreDatabase = new IgnoreDatabase(getLogger(), Main.dataFolder);
+        ignoreDatabase.migrateFromTextFiles(Main.dataFolder);
+
         // Initialize blacklist filter
         blacklistFilter = new BlacklistFilter(this);
 
@@ -199,11 +208,7 @@ public class Main extends JavaPlugin {
                     return true;
                 }
 
-                try {
-                    unIgnoreAll(player);
-                } catch (IOException e) {
-                    getLogger().warning(String.format("Error while unignoring all players: %s", e.getMessage()));
-                }
+                unIgnoreAll(player);
 
                 return true;
             } else if (cmd.getName().equalsIgnoreCase("ignore")) {
@@ -217,15 +222,24 @@ public class Main extends JavaPlugin {
                     return true;
                 }
 
-                try {
-                    ignorePlayer(player, args[0]);
-                } catch (IllegalArgumentException e) {
+                String targetName = args[0];
+                if (targetName.length() > 25 || !targetName.matches("^[a-zA-Z0-9_.*]+$")) {
                     sender.sendMessage(componentFromLegacyText("&cYou entered an invalid player name."));
-                } catch (IOException e) {
-                    getLogger().warning(String.format("Error while ignoring player: %s", e.getMessage()));
+                    return true;
+                }
+                
+                if (player.getName().equalsIgnoreCase(targetName)) {
+                    sender.sendMessage(componentFromLegacyText("&cYou cannot ignore yourself."));
+                    return true;
                 }
 
-                final Player ignore = Bukkit.getPlayer(args[0]);
+                try {
+                    ignorePlayer(player, targetName);
+                } catch (IllegalArgumentException e) {
+                    sender.sendMessage(componentFromLegacyText("&cYou entered an invalid player name."));
+                }
+
+                final Player ignore = Bukkit.getPlayer(targetName);
                 if (ignore == null) {
                     sender.sendMessage(componentFromLegacyText("&cYou have entered a player who does not exist or is offline."));
                 }
@@ -477,22 +491,7 @@ public class Main extends JavaPlugin {
     }
 
     public ChatPlayer getChatPlayer(final Player p) {
-        for (final ChatPlayer chatPlayer : playerList) {
-            if (chatPlayer.playerUUID.equals(p.getUniqueId())) {
-                return chatPlayer;
-            }
-        }
-
-        ChatPlayer newChatPlayer = null;
-
-        try {
-            newChatPlayer = new ChatPlayer(p);
-            playerList.add(newChatPlayer);
-        } catch (IOException e) {
-            getLogger().warning(String.format("Error creating ChatPlayer: %s", e.getMessage()));
-        }
-
-        return newChatPlayer;
+        return playerMap.computeIfAbsent(p.getUniqueId(), uuid -> new ChatPlayer(p, ignoreDatabase));
     }
 
     private boolean toggleChat(final Player p) {
@@ -511,7 +510,7 @@ public class Main extends JavaPlugin {
         return getChatPlayer(p).tellsDisabled = true;
     }
 
-    private void ignorePlayer(final Player p, final String target) throws IOException {
+    private void ignorePlayer(final Player p, final String target) {
         final ChatPlayer chatter = getChatPlayer(p);
         chatter.saveIgnoreList(target);
         boolean isNowIgnored = chatter.isIgnored(target);
@@ -522,7 +521,7 @@ public class Main extends JavaPlugin {
         p.sendMessage(componentFromLegacyText(message));
     }
 
-    private void unIgnoreAll(final Player p) throws IOException {
+    private void unIgnoreAll(final Player p) {
         final ChatPlayer chatter = getChatPlayer(p);
         chatter.unIgnoreAll();
 
@@ -531,7 +530,7 @@ public class Main extends JavaPlugin {
     }
 
     public void remove(Player player) {
-        playerList.removeIf(p -> p.player.equals(player));
+        playerMap.remove(player.getUniqueId());
     }
 
     private void toggleConfigValue(final int change) {
